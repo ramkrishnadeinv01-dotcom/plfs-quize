@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PLFS Online Mock Test (20 Questions)</title>
+
+<style>
+body { font-family: Arial; margin: 20px; }
+h2 { text-align: center; }
+.timer { color: red; font-weight: bold; font-size: 18px; }
+.question { margin-bottom: 12px; }
+button { padding: 10px 20px; font-size: 16px; }
+.hidden { display: none; }
+input[type=text] { padding: 6px; width: 250px; }
+</style>
+</head>
+
+<body>
+
+<script>
+// 🔒 BLOCK PAGE IF EXAM ALREADY SUBMITTED
+if (localStorage.getItem("PLFS_EXAM_SUBMITTED") === "YES") {
+  document.body.innerHTML =
+    "<h2 style='text-align:center;color:red;margin-top:50px;'>" +
+    "Exam already submitted.<br><br>You are not allowed to reattempt.</h2>";
+}
+</script>
+
+<h2>PLFS ONLINE MOCK TEST – RTC 2026</h2>
+
+<!-- LOGIN -->
+<div id="login">
+<b>Candidate Name:</b><br>
+<input type="text" id="candName"><br><br>
+
+<b>Employee ID:</b><br>
+<input type="text" id="candId"><br><br>
+
+<button onclick="startExam()">Start Exam</button>
+</div>
+
+<!-- EXAM -->
+<div id="exam" class="hidden">
+
+<p>
+<b>Total Questions:</b> 20 |
+<b>Time:</b> 10 Minutes |
+<b>Marking:</b> +1 / –0.25
+</p>
+
+<p class="timer" id="timer">Time Left: 10:00</p>
+
+<form id="quizForm">
+
+<script>
+const questions = [
+["Platform work means:",["Work mediated by digital platform","Factory work","Office job"],0],
+["Web-based freelancing involves:",["Online services","Construction","Agriculture"],0],
+["NIC applicable from 2026:",["NIC-2025","NIC-2018","NIC-2008"],0],
+["Platform workers are identified in:",["Block 5","Block 3","Block 7"],0],
+["Code 31 refers to:",["Platform worker","Self-employed","Casual worker"],0],
+["Column 15 applies to:",["11,12 & 21","31 & 51","All"],0],
+["Column 16 applies to:",["31 & 51","11 & 21","All"],0],
+["Platform screening NIC divisions:",["01–03,10–97,99","All","Only IT"],0],
+["Mining division is:",["Excluded","Included","Subsidiary"],0],
+["Code 1 in Col 17 means:",["Major platform","Minor","Not platform"],0],
+["Ola + Uber same activity:",["Code 1","Code 2","Blank"],0],
+["Ola + Zomato:",["Code 2","Code 1","Blank"],0],
+["Block 5.4 filled for age:",["5 years & above","15+","18+"],0],
+["Taxi / ride sharing code:",["01","02","03"],0],
+["Content creation code:",["11","10","12"],0],
+["Multiple activities record:",["Max time spent","Highest income","Any"],0],
+["Code 1 in Col 8:",["Online","Offline","Hybrid"],0],
+["WhatsApp selling platform work?",["No","Yes"],0],
+["YouTuber earning money:",["Platform worker","Not platform worker"],0],
+["Child aged 4 helping:",["Block 5.4 not filled","Block 5.4 filled"],0]
+];
+
+let html="";
+questions.forEach((q,i)=>{
+ html+=`<div class="question"><b>${i+1}. ${q[0]}</b><br>`;
+ q[1].forEach((opt,j)=>{
+  let val = j===q[2] ? 1 : -0.25;
+  html+=`<input type="radio" name="q${i+1}" value="${val}"> ${opt}<br>`;
+ });
+ html+=`</div>`;
+});
+document.write(html);
+</script>
+
+<br>
+<button type="button" id="submitBtn" onclick="submitExam()">Submit Exam</button>
+
+</form>
+</div>
+
+<script>
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCplkmY2bdQ0K9h-vG049h2IvHlPEJ57cFIVi2TzlqDybMLGt6_hK9C7Gox4bPZemvLQ/exec";
+
+let time = 600; // 10 minutes
+let timerInt;
+let correct=0, wrong=0, unattempted=0, score=0;
+
+function startExam(){
+ if(!candName.value.trim() || !candId.value.trim()){
+  alert("Please enter Candidate Name and Employee ID");
+  return;
+ }
+
+ document.getElementById("login").classList.add("hidden");
+ document.getElementById("exam").classList.remove("hidden");
+
+ timerInt = setInterval(()=>{
+  if(time<=0) submitExam();
+  let m = Math.floor(time/60);
+  let s = time % 60;
+  timer.innerHTML = `Time Left: ${m}:${s<10?'0'+s:s}`;
+  time--;
+ },1000);
+}
+
+function submitExam(){
+ clearInterval(timerInt);
+ document.getElementById("submitBtn").disabled = true;
+
+ correct=wrong=unattempted=score=0;
+
+ for(let i=1;i<=20;i++){
+  let q = document.forms.quizForm["q"+i];
+  let attempted=false;
+  if(q){
+   for(let r of q){
+    if(r.checked){
+     attempted=true;
+     if(Number(r.value)===1){ correct++; score+=1; }
+     else { wrong++; score-=0.25; }
+    }
+   }
+  }
+  if(!attempted) unattempted++;
+ }
+
+ score = Math.max(score,0);
+ let percent = ((score/20)*100).toFixed(2);
+ let result = percent>=40 ? "PASS" : "FAIL";
+
+ alert(
+  `Exam Submitted\n\nCorrect: ${correct}\nWrong: ${wrong}\nUnattempted: ${unattempted}\n\nScore: ${score.toFixed(2)}/20`
+ );
+
+ fetch(WEB_APP_URL,{
+  method:"POST",
+  body: JSON.stringify({
+   name: candName.value,
+   empid: candId.value,
+   correct: correct,
+   wrong: wrong,
+   unattempted: unattempted,
+   score: score.toFixed(2),
+   percentage: percent,
+   result: result
+  })
+ });
+
+ // 🔒 LOCK EXAM
+ localStorage.setItem("PLFS_EXAM_SUBMITTED", "YES");
+}
+</script>
+
+</body>
+</html>
